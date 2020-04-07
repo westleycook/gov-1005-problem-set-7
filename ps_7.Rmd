@@ -7,5 +7,77 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+# standard first load
+
+library(tidyverse)
+
+# for use of skim()
+
+library(skimr)
+
+# loading congress data
+
+nominate <- read_csv("raw-data/HSall_members.csv", col_types = cols())
+
 ```
+
+## Question 1: Exploratory Data Analysis
+
+### 1A) Summary Statistics
+
+```{r question_1a, echo=FALSE}
+
+nominate_116 <- nominate %>% 
+  filter(chamber == "Senate" | chamber == "House",
+         congress == 116) %>% 
+  mutate(party = case_when(party_code == 100 ~ "Democrat",
+                           party_code == 200 ~ "Republican"),
+         age = 2019 - born) %>% 
+  filter(!is.na(party)) %>% 
+  mutate(nominate_percentile = round(percent_rank(nominate_dim1) * 100,
+                                     digits = 0))
+
+nominate_116 %>% 
+  select(nominate_percentile, age) %>% 
+  skim()
+
+```
+
+### 1B) Visualizations
+
+```{r question_1b, echo=FALSE}
+
+nominate_116 %>% 
+  ggplot(aes(age, fill = chamber)) +
+  geom_bar() +
+  theme_classic() +
+  labs(title = "Distribution of Congressional Ages by Chamber",
+       subtitle = "More young Representatives than young Senators",
+       x = "Age",
+       y = "Count") +
+  scale_fill_manual(name = "Chamber",
+                    values = c("House" = "brown",
+                               "Senate" = "black"))
+
+nominate_116 %>% 
+  ggplot(aes(age, nominate_percentile, color = party)) +
+  geom_point() +
+  theme_classic() +
+  labs(title = "Congressional Age and Ideology",
+       subtitle = "Some negative association between liberalism and age",
+       x = "Age",
+       y = "Percentile Rank (0 = most liberal)") +
+  scale_color_manual(name = "Party",
+                     breaks = c("Republican", "Democrat"),
+                     values = c("Democrat" = "blue", "Republican" = "red")) +
+  geom_smooth(method = "lm", se = FALSE)
+
+```
+
+Make a nice plot (histogram or bar chart) showing the distribution of congressional ages. Feel free to be creative- maybe you want to show the distribution by party or chamber. Remember, we’re using this process to explore the data; try and make a plot that helps you understand it better. Then, do the same for your outcome variable, nominate_percentile. Print both plots here.
+
+### 1C) Bivariate Correlations
+
+Remember that our end goal is not to understand just a single variable, but how they relate to one another. Bivariate correlations help us to understand the relationship between two variables. Within your dataset of the 116th congress, calculate the correlation coefficient between age and nominate_percentile. Print the result here. In one sentence, tell us how we would interpret a negative coefficient vs. a positive coefficient.
 
