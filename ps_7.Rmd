@@ -16,7 +16,7 @@ library(tidyverse)
 
 library(skimr)
 
-# loading congress data
+# loading and naming congress data
 
 nominate <- read_csv("raw-data/HSall_members.csv", col_types = cols())
 
@@ -28,6 +28,18 @@ nominate <- read_csv("raw-data/HSall_members.csv", col_types = cols())
 
 ```{r question_1a, echo=FALSE}
 
+# This r chunk wrangles the data as requested in the assignment prompt, giving a
+# new name to the object for easy use in parts b) and c), then prints the
+# results of the skim() function to show some summary stats
+
+# I filter first for just the senate and house, using the vertical bar for "or",
+# and additionally filter for just the 116th congress. I use case_when to assign
+# names to the variable party, and then filter again to drop the resulting NA
+# values (for those neither democrat nor republican, the independents). I then
+# use percent_rank() to add percentile values based on nominate_dim1,
+# multiplying by 100 and rounding to 0 digits to comply with the assignment
+# prompt formatting statement (that the median value should be 50)
+
 nominate_116 <- nominate %>% 
   filter(chamber == "Senate" | chamber == "House",
          congress == 116) %>% 
@@ -38,6 +50,9 @@ nominate_116 <- nominate %>%
   mutate(nominate_percentile = round(percent_rank(nominate_dim1) * 100,
                                      digits = 0))
 
+# Having wrangled the data, I select the two variables of interest, pipe it to
+# the skim() function, and print the result
+
 nominate_116 %>% 
   select(nominate_percentile, age) %>% 
   skim()
@@ -47,6 +62,17 @@ nominate_116 %>%
 ### 1B) Visualizations
 
 ```{r question_1b, echo=FALSE}
+
+# This r chunk creates two plots
+
+# The first plot shows the distribution of age in congress by chamber. I thought
+# about showing age by party, but I found this data to be more interesting
+# (there was some variation in age by party, but not enough to be very
+# compelling to me). Party was also harder to map neatly in one plot; the bars
+# got too skinny if I used position_dodge and it wasn't as readable if I used
+# the default "stack" position. So I settled on this, which I think does a nice
+# job preserving a clean look at the overall distribution of ages while adding
+# the insight that there's more (relative) youth in the House
 
 nominate_116 %>% 
   ggplot(aes(age, fill = chamber)) +
@@ -60,11 +86,24 @@ nominate_116 %>%
                     values = c("House" = "brown",
                                "Senate" = "black"))
 
+# The second plot shows the relationship between age and ideology. I wasn't sure
+# if I should make this plot, given that the prompt asked us to focus on one
+# variable, but a histogram of percentile rank is essentially flat (given the
+# nature of percentiles, they're spread out evenly, as seen in the skim()
+# results) so that seemed really boring. So I thought, since we're supposed to
+# be looking at the hypothesis that older senators are more conservative, I'd
+# take a preliminary look at that in the context of the 116th congress. As I'd
+# expected, party maps to ideology much more closely than age does. I initally
+# thought (just eyeballing the scatterplot) that there was very little
+# relationship between age and ideology, but adding geom_smooth() revealed the
+# negative association, which (perhaps unsurprisingly) was more pronounced among
+# Democrats than Republicans
+
 nominate_116 %>% 
   ggplot(aes(age, nominate_percentile, color = party)) +
   geom_point() +
   theme_classic() +
-  labs(title = "Congressional Age and Ideology",
+  labs(title = "Congressional Age and Ideology with Simple Linear Regression",
        subtitle = "Some negative association between liberalism and age",
        x = "Age",
        y = "Percentile Rank (0 = most liberal)") +
@@ -75,9 +114,22 @@ nominate_116 %>%
 
 ```
 
-Make a nice plot (histogram or bar chart) showing the distribution of congressional ages. Feel free to be creative- maybe you want to show the distribution by party or chamber. Remember, we’re using this process to explore the data; try and make a plot that helps you understand it better. Then, do the same for your outcome variable, nominate_percentile. Print both plots here.
-
 ### 1C) Bivariate Correlations
 
-Remember that our end goal is not to understand just a single variable, but how they relate to one another. Bivariate correlations help us to understand the relationship between two variables. Within your dataset of the 116th congress, calculate the correlation coefficient between age and nominate_percentile. Print the result here. In one sentence, tell us how we would interpret a negative coefficient vs. a positive coefficient.
+```{r question 1c, echo=FALSE}
 
+# This r chunk finds the value of the correlation coefficient for age and
+# nominate_percentile and assigns that value to an object to insert below. I
+# round to 4 digits arbitrarily because 2 seemed too few, but 3 wasn't an
+# option: because the value is 0.1596, it would just round to 0.16
+
+cor_coeff <- nominate_116 %>% 
+  summarize(cor = cor(age, nominate_percentile)) %>% 
+  pull(cor) %>% 
+  round(digits = 4)
+
+```
+
+The correlation coefficient for age and nominate_percentile for the 116th Congress is **`r cor_coeff`**.
+
+The negative coefficient indicates that the variables are moving in *inverse* directions; as age goes up, the percentile rank of ideology goes down. If the coefficient were positive, age and percentile rank would move in the same direction.
