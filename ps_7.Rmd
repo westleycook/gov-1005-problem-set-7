@@ -1,30 +1,33 @@
 ---
 title: "Problem Set 7"
 author: "Westley Cook"
-date: "4/8/2020"
+date: "4/7/2020"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-# standard first load
+# Standard first load
 
 library(tidyverse)
 
-# for use of skim()
+# For use of skim()
 
 library(skimr)
 
-# for using tidy()
+# For using tidy()
 
 library(broom)
 
-# for making tables
+# For making tables
 
 library(gt)
 
-# loading and naming congress data
+# Loading and naming congress data. Could have been done below, since I
+# eliminated the warning message by specifying col_types, but since it's used
+# throughout the assignment I thought it fit better in "setup" than under
+# "question 1")
 
 nominate <- read_csv("raw-data/HSall_members.csv", col_types = cols())
 
@@ -37,8 +40,8 @@ nominate <- read_csv("raw-data/HSall_members.csv", col_types = cols())
 ```{r question_1a, echo=FALSE}
 
 # This r chunk wrangles the data as requested in the assignment prompt, giving a
-# new name to the object for easy use in parts b) and c), then prints the
-# results of the skim() function to show some summary stats
+# new name to the object for easy use in later parts of the question. It then
+# prints the results of the skim() function to show some summary stats
 
 # I filter first for just the senate and house, using the vertical bar for "or",
 # and additionally filter for just the 116th congress. I use case_when to assign
@@ -70,16 +73,16 @@ nominate_116 %>%
 
 ```{r question_1b, echo=FALSE}
 
-# This r chunk creates two plots
+# This r chunk creates two plots to help visualize the age distributions
 
 # The first plot shows the distribution of age in congress by chamber. I found
 # this data to be interesting in that there are more young representatives than
 # young senators. I think this plot does a nice job preserving a clean look at
 # the overall distribution of ages while adding the insight that there's more
 # (relative) youth in the House. I chose brown and black for the colors because
-# I wanted something distinctly nonpartisan; I didn't want there to by any
-# confusion about party affiliations by choosing something like, say, red and
-# blue to show the different chambers of congress
+# I wanted something plain and distinctly nonpartisan; I didn't want there to be
+# any confusion about party affiliations by choosing something like, say, red
+# and blue to show the different chambers of congress
 
 nominate_116 %>% 
   ggplot(aes(age, fill = chamber)) +
@@ -94,10 +97,10 @@ nominate_116 %>%
                                "Senate" = "black"))
 
 # The second plot shows the relationship between age and party. I wasn't sure if
-# I should make this plot, given that the prompt asked us to make one for
-# nominate_percentile, but a histogram of percentile rank is essentially flat
-# (given the nature of percentiles; they're spread out evenly, as seen in the
-# skim() results) so that seemed really boring. So I thought a different look at
+# I should make a plot like this, given that the prompt asked us to make one for
+# nominate_percentile, but a histogram of percentile rank is essentially flat,
+# so that seemed really boring (that's the nature of percentiles; they're spread
+# out evenly, as seen in the skim() results). So I thought a different look at
 # ages might be warranted. Using a combination of fill = party and facet_wrap(~
 # party) and putting the plots above/below one another seemed to give the
 # cleanest look at the differences in distribution. A single bar plot with
@@ -125,18 +128,18 @@ nominate_116 %>%
 
 # This r chunk finds the value of the correlation coefficient for age and
 # nominate_percentile and assigns that value to an object to insert below. I
-# round to 3 digits arbitrarily because 2 seemed too few and 3 seemed too many
+# round to 3 digits arbitrarily because 2 seemed too few and 4 seemed too many
 
-cor_coeff <- nominate_116 %>% 
+cor_coef <- nominate_116 %>% 
   summarize(cor = cor(age, nominate_percentile)) %>% 
   pull(cor) %>% 
   round(digits = 3)
 
 ```
 
-The correlation coefficient for age and nominate_percentile for the 116th Congress is **`r cor_coeff`**.
+The correlation coefficient for age and nominate_percentile for the 116th Congress is **`r cor_coef`**.
 
-The negative coefficient indicates that the variables are moving in *inverse* directions; as age goes up, the percentile rank of ideology goes down. If the coefficient were positive, age and percentile rank would move in the same direction.
+The negative coefficient indicates that the variables are moving in *inverse* directions: as age goes up, the percentile rank of ideology goes down. If the coefficient were positive, age and percentile rank would move in the same direction.
 
 ### 1D) Plotting Bivariate Relationships
 
@@ -146,12 +149,12 @@ The negative coefficient indicates that the variables are moving in *inverse* di
 
 # Eyeballing the scatter plot before adding the regression lines, it didn't look
 # like there was much of a relationship between age and percentile, but adding
-# geom_smooth() revealed the negative association (which does, in fact, match
-# the sign of the correlation coefficient). I got the aggregate line to show up
-# on the plot by taking aes(color = party) out of the ggplot layer and adding a
+# geom_smooth() revealed the negative association (which matches the sign of the
+# correlation coefficient found above). I got the aggregate line to show up on
+# the plot by taking aes(color = party) out of the ggplot layer and adding a
 # geom_smooth() layer; then I got the colored points and lines separated by
-# party to show up by adding the color mapping to the geom_point layer and to
-# the second geom_smooth layer. It was then pretty simple to add labels and
+# party to show up by adding the color mapping to the geom_point() layer and to
+# the second geom_smooth() layer. It was then pretty simple to add labels and
 # manually change colors to produce the final result
 
 # Note: the order in my legend is flipped from the plot we're replicating
@@ -207,29 +210,54 @@ nominate_116 %>%
 
 ### 2B) Interpreting results
 
-The estimated average treatment effect is that being one year older is associated, on average, with a decrease of about one-third of a percentile (-0.33 percentile units) for a Democratic member of Congress. We should not necessarily interpret this correlation as being causal unless we’re certain that no other variables could be confounding the result (an assumption which seems unlikely). For example, perhaps it’s not age itself that causes Congress members to become more liberal, but rather it’s that older members of Congress aren’t as frequently trying to be re-elected and thus don’t need to pander to the median voter by feigning conservatism.
+The estimated average treatment effect is that being one year older is associated, on average, with a decrease of about one-third of a percentile (-0.33 percentile units) for a Democratic member of Congress. We should not necessarily interpret this correlation as being causal unless we’re certain that no other variables could be confounding the result. That assumption seems unlikely; for example, perhaps it’s not age itself that causes Congress members to become more liberal, but rather it’s that older members of Congress aren’t as frequently trying to be re-elected and thus don’t need to pander to the median voter by feigning extra conservatism.
 
 We calculate a confidence interval around our average treatment effect because we don’t think that our sample of Democratic Congress members in the 116th Congress is necessarily representative of all Democratic Congress members in other sessions; calculating a confidence interval allows us to have a plausible range of values for the treatment effect (as low as -0.469 or as high as -0.196) if we want to extrapolate the correlation we found in this particular data to past or future sessions of Congress.
 
 ### 2C) Regression and the Rubin Causal Model
 
-Because treatment was randomly assigned, this analysis could be considered causal. The slope coefficient X on military would then mean that the *average treatment effect* on nominate_percentile of having a Congress member serve in the military would be X units. The average treatment effect would represent the average difference in potential outcomes (comparing potential percentile rank *with* military service and potential percentile rank *without* military service) for Democratic members of Congress.
+Because treatment was randomly assigned, this analysis can be considered causal. The slope coefficient X on military would mean that the *average treatment effect* on nominate_percentile of having a Congress member serve in the military would be X units. The average treatment effect would represent the average difference in potential outcomes (comparing potential percentile rank *with* military service and potential percentile rank *without* military service) for Democratic members of Congress.
 
 ## Question 3: Many Regressions
 
 ```{r question_3, echo=FALSE}
 
-# This r chunk replicates the assignment's plot of average treatment effect of
-# age on conservatism among democrats over time
+# This r chunk replicates the assignment's plot (average treatment effect of age
+# on conservatism among democrats over time)
+
+# I begin by creating a tibble with the necessary values. Step one is to subset
+# to just democratic congress members
 
 dems_nominate <- nominate %>% 
   filter(chamber == "Senate" | chamber == "House",
          party_code == 100) %>% 
+  
+# Step two: add percentile using same method as I used in question 1. The
+# difference here is that it's the percentile among democrats rather than the
+# percentile among all congress members
+  
   mutate(nominate_percentile = percent_rank(nominate_dim1) * 100,
+         
+# Step three: to calculate age for each session, I first calculate the start
+# date for each session using the congress variable and then subtract year born
+# from start date
+         
          start_date = congress + 1812 + (congress - 25),
          age = start_date - born) %>% 
+  
+# Step four: set up the tibble for a series of map_* function mutations  
+  
   group_by(congress) %>% 
   nest() %>% 
+  
+# Step five: map_* function mutations. As outlined in PPBDS 11.4.1, I first add
+# a column with the linear models for each session of congress. Then I add a
+# column with tidy results of those models. Then I add a column by pulling the
+# estimate (coeffecient) from the tidy results. Unlike in the textbook, I use
+# conf.int = TRUE when creating the tidy results so I can just repeat the
+# map_dbl() function to pull from that tibble when I want to find the upper and
+# lower bounds of the confidence interval and place them in their own columns
+  
   mutate(mod = map(data, ~ lm(nominate_percentile ~ age, data = .)),
          reg_results = map(mod, ~ tidy(., conf.int = TRUE)),
          coef = map_dbl(reg_results, ~ filter(., term == "age") %>% 
@@ -238,6 +266,13 @@ dems_nominate <- nominate %>%
                            pull(conf.high)),
          lower = map_dbl(reg_results, ~ filter(., term == "age") %>% 
                            pull(conf.low)))
+
+# Once I had all the necessary values in a tibble, it was pretty simple to plot
+# it. I first map the aes() layer in ggplot(), then add colored points using
+# geom_point(), then add colored error bars using geom_errorbar() (it was nice
+# to have a tip on this part!), then use theme_classic() for style (and to
+# replicate the assignment plot perfectly), then add a title, subtitle, and
+# labels with text taken from the model plot
 
 dems_nominate %>% 
   ggplot(aes(congress, coef)) +
@@ -255,10 +290,3 @@ dems_nominate %>%
 
 ##### Worked with:
 None
-
-
-
-
-
-
-
