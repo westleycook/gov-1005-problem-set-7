@@ -207,39 +207,58 @@ nominate_116 %>%
 
 ### 2B) Interpreting results
 
-In one or two paragraphs (max 200 words), answer the following.
+The estimated average treatment effect is that being one year older is associated, on average, with a decrease of about one-third of a percentile (-0.33 percentile units) for a Democratic member of Congress. We should not necessarily interpret this correlation as being causal unless we’re certain that no other variables could be confounding the result (an assumption which seems unlikely). For example, perhaps it’s not age itself that causes Congress members to become more liberal, but rather it’s that older members of Congress aren’t as frequently trying to be re-elected and thus don’t need to pander to the median voter by feigning conservatism.
 
-What is the estimated average treatment effect? How would you, in words, describe the effect of being one year older on a democratic member of congress’s percentile rank for DW nominate scores?
-
-Give one reason we should not necessarily interpret the estimated correlation as causal. In other words, can you think of a reason that older democratic senators might be less conservative, that is not a direct effect of age?
-
-Why do we calculate a confidence interval around our average treatment effect?
-
+We calculate a confidence interval around our average treatment effect because we don’t think that our sample of Democratic Congress members in the 116th Congress is necessarily representative of all Democratic Congress members in other sessions; calculating a confidence interval allows us to have a plausible range of values for the treatment effect (as low as -0.469 or as high as -0.196) if we want to extrapolate the correlation we found in this particular data to past or future sessions of Congress.
 
 ### 2C) Regression and the Rubin Causal Model
 
-We might want to know whether conducting military service makes congress members more or less conservative. Imagine that we have the power to randomly assign the democratic members of congress to active military duty, and then we observe their roll call voting records (and calculate their DW nominate score) afterward. Our data would then have a treatment variable military which would take values of treated or control, and the same outcome variable, nominate_percentile. Our potential outcomes table would look like this:
+Because treatment was randomly assigned, this analysis could be considered causal. The slope coefficient X on military would then mean that the *average treatment effect* on nominate_percentile of having a Congress member serve in the military would be X units. The average treatment effect would represent the average difference in potential outcomes (comparing potential percentile rank *with* military service and potential percentile rank *without* military service) for Democratic members of Congress.
 
-Potential Outcomes for DW Nominate Percentile1
-Member of Congress	Military	Potential Outcomes
-Under Control	Under Treatment
-SEWELL, Terri	Treatment	?	21.83
-GRIJALVA, Raúl M.	Control	2.05	?
-KIRKPATRICK, Ann	Treatment	?	49.63
-GALLEGO, Ruben	Treatment	?	11.19
-O'HALLERAN, Thomas C.	Control	47.57	?
-STANTON, Greg	Treatment	?	34.89
-PELOSI, Nancy	Treatment	?	7.28
-SCHIFF, Adam	Treatment	?	29.48
-DAVIS, Susan A.	Control	30.41	?
-SÁNCHEZ, Linda T.	Control	6.34	?
+## Question 3: Many Regressions
 
-1 Treatment is military service
+```{r question_3, echo=FALSE}
 
-Note that we’re just using the observed nominate percentiles, and imagining that the treatment had been assigned prior.
+# This r chunk replicates the assignment's plot of average treatment effect of
+# age on conservatism among democrats over time
 
-Now imagine that we ran the following code:
+dems_nominate <- nominate %>% 
+  filter(chamber == "Senate" | chamber == "House",
+         party_code == 100) %>% 
+  mutate(nominate_percentile = percent_rank(nominate_dim1) * 100,
+         start_date = congress + 1812 + (congress - 25),
+         age = start_date - born) %>% 
+  group_by(congress) %>% 
+  nest() %>% 
+  mutate(mod = map(data, ~ lm(nominate_percentile ~ age, data = .)),
+         reg_results = map(mod, ~ tidy(., conf.int = TRUE)),
+         coef = map_dbl(reg_results, ~ filter(., term == "age") %>% 
+                          pull(estimate)),
+         upper = map_dbl(reg_results, ~ filter(., term == "age") %>% 
+                           pull(conf.high)),
+         lower = map_dbl(reg_results, ~ filter(., term == "age") %>% 
+                           pull(conf.low)))
 
-mil_model <- lm(nominate_percentile ~ military, data = d116)
+dems_nominate %>% 
+  ggplot(aes(congress, coef)) +
+  geom_point(color = "blue") +
+  geom_errorbar(aes(x = congress, ymin = lower, ymax = upper), color = "blue") +
+  theme_classic() +
+  labs(title = "Average Treatment Effect of Age on Conservatism 
+ Among Democrats Over Time",
+       subtitle = "Scores use DW Nominate Dimension 1
+ 95% Confidence Interval",
+       x = "Congress",
+       y = "Estimate")
 
-In a short paragraph (100 words or fewer), explain how you would interpret the coefficient on military within the framework of the Rubin Causal Model. You may want to see the discussion in 11.1.3 in PPBDS for help. Make sure to use the phrases “average treatment effect” and “difference in potential outcomes” and to explain whether this analysis could be considered causal or not (hint- the randomization is what matters).
+```
+
+##### Worked with:
+None
+
+
+
+
+
+
+
